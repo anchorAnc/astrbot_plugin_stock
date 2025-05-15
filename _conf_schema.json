@@ -1,0 +1,21 @@
+{
+  "tushare_token": {
+    "description": "Tushare Pro API Token",
+    "type": "string",
+    "hint": "在 Tushare Pro 网站获取的 token",
+    "obvious_hint": true
+  },
+  "default_period": {
+    "description": "默认查询周期",
+    "type": "string",
+    "hint": "可选 'daily' 或 'weekly'",
+    "default": "daily",
+    "options": ["daily", "weekly", "monthly"]
+  },
+  "default_limit": {
+    "description": "默认返回条数",
+    "type": "int",
+    "hint": "仅在查询历史数据时生效",
+    "default": 5
+  }
+}
