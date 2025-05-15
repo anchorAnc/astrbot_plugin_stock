@@ -15,8 +15,8 @@
 
 ## 配置⚙️
 
-在 AstrBot 管理面板填写并保存以下配置项：  
-- `tushare_token`：Tushare Pro API Token  （https://tushare.pro/user/token）📝
+在 AstrBot 管理面板填写并保存以下配置项：📝  
+- `tushare_token`：Tushare Pro API Token  （https://tushare.pro/user/token）
 - `default_period`：默认周期，可选 `daily`/`weekly`/`monthly` （默认 `daily`）  
 - `default_limit`：历史查询默认条数（默认 `5`）
 
