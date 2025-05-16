@@ -68,7 +68,7 @@ class StockPriceCard:
         return '↑' if self.change > 0 else '↓' if self.change < 0 else '-'
 
 # ---------------------- 插件主类 ----------------------
-@register("stock_price", "you_username", "股市行情查询插件", "1.2.0")
+@register("astrbot_plugin_stock", "anchor", "股市行情查询插件", "1.0.3", "https://github.com/anchorAnc/astrbot_plugin_stock ")
 class StockPricePlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
