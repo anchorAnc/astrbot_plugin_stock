@@ -1,5 +1,5 @@
 name: "astrbot_plugin_stock"
-version: v1.0.2 
+version: v1.0.3 
 author: anchor 
 desc: 基于 Tushare 的股市行情查询插件
 repository: https://github.com/anchorAnc/astrbot_plugin_stock 
