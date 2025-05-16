@@ -1,6 +1,6 @@
 # astrbot_plugin_stock
 
-基于 Tushare Pro 的 A 股行情查询 AstrBot 插件，支持实时和历史日线数据查询。
+基于 Tushare Pro 的股市行情查询 AstrBot 插件，支持实时和历史日线数据查询。
 
 ## 安装🚀
 
