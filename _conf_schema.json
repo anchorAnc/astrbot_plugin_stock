@@ -1,21 +1,175 @@
 {
-  "tushare_token": {
-    "description": "Tushare Pro API Token",
-    "type": "string",
-    "hint": "在 Tushare Pro 网站获取的 token",
-    "obvious_hint": true
-  },
-  "default_period": {
-    "description": "默认查询周期",
-    "type": "string",
-    "hint": "可选 'daily' 或 'weekly'",
-    "default": "daily",
-    "options": ["daily", "weekly", "monthly"]
-  },
   "default_limit": {
-    "description": "默认返回条数",
+    "description": "默认K线显示天数",
     "type": "int",
-    "hint": "仅在查询历史数据时生效",
-    "default": 5
+    "hint": "建议设置10-30天，可以获得较好的显示效果",
+    "default": 20,
+    "min": 5,
+    "max": 60
+  },
+  "data_limits": {
+    "description": "数据查询限制设置",
+    "type": "object",
+    "items": {
+      "daily_max_records": {
+        "description": "日K线最大记录数",
+        "type": "int",
+        "default": 60,
+        "min": 10,
+        "max": 200,
+        "hint": "历史数据查询的最大记录数，影响查询速度"
+      },
+      "hourly_max_records": {
+        "description": "小时K线最大记录数",
+        "type": "int",
+        "default": 100,
+        "min": 20,
+        "max": 300,
+        "hint": "小时K线查询的最大记录数"
+      },
+      "minutely_max_records": {
+        "description": "分钟K线最大记录数",
+        "type": "int",
+        "default": 200,
+        "min": 50,
+        "max": 500,
+        "hint": "分钟K线查询的最大记录数"
+      },
+      "default_days_back": {
+        "description": "默认查询天数",
+        "type": "int",
+        "default": 90,
+        "min": 30,
+        "max": 365,
+        "hint": "历史数据默认查询多少天前的数据"
+      }
+    }
+  },
+  "timeout_settings": {
+    "description": "超时设置",
+    "type": "object",
+    "items": {
+      "us_stock_timeout": {
+        "description": "美股查询超时时间(秒)",
+        "type": "int",
+        "default": 25,
+        "min": 5,
+        "max": 60,
+        "hint": "美股数据获取的超时时间，网络较慢时可适当增加"
+      },
+      "general_timeout": {
+        "description": "一般查询超时时间(秒)",
+        "type": "int",
+        "default": 30,
+        "min": 5,
+        "max": 90,
+        "hint": "A股、港股等数据获取的超时时间"
+      },
+      "max_retries": {
+        "description": "最大重试次数",
+        "type": "int",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "hint": "查询失败时的最大重试次数"
+      }
+    }
+  },
+  "chart_style": {
+    "description": "图表样式设置",
+    "type": "object",
+    "items": {
+      "ma_periods": {
+        "description": "均线周期设置",
+        "type": "list",
+        "default": [5, 10, 20],
+        "hint": "设置1-3个均线,例如[5,10,20]表示5日、10日、20日均线"
+      },
+      "volume_ma_periods": {
+        "description": "成交量均线周期",
+        "type": "list",
+        "default": [5, 10],
+        "hint": "设置1-2个成交量均线,例如[5,10]表示5日、10日均线"
+      },
+      "color_style": {
+        "description": "颜色风格",
+        "type": "string",
+        "hint": "red_green(红涨绿跌)或green_red(绿涨红跌)",
+        "default": "red_green",
+        "options": ["red_green", "green_red"]
+      },
+      "chart_width": {
+        "description": "图表宽度",
+        "type": "int",
+        "default": 1200,
+        "min": 800,
+        "max": 2000,
+        "hint": "生成图表的宽度像素"
+      },
+      "chart_height": {
+        "description": "图表高度",
+        "type": "int",
+        "default": 800,
+        "min": 600,
+        "max": 1200,
+        "hint": "生成图表的高度像素"
+      },
+      "show_volume": {
+        "description": "显示成交量",
+        "type": "bool",
+        "default": true,
+        "hint": "是否在K线图中显示成交量子图"
+      },
+      "show_indicators": {
+        "description": "显示技术指标",
+        "type": "bool",
+        "default": true,
+        "hint": "是否在图表中显示MACD、KDJ等技术指标"
+      }
+    }
+  },
+  "data_cache_ttl": {
+    "description": "数据缓存时间(秒)",
+    "type": "int",
+    "hint": "设置数据缓存时间，减少API请求频率",
+    "default": 60,
+    "min": 30,
+    "max": 300
+  },
+  "enable_auto_correction": {
+    "description": "启用自动代码纠正",
+    "type": "bool",
+    "hint": "是否自动纠正用户输入的股票代码格式",
+    "default": true
+  },
+  "features": {
+    "description": "功能开关",
+    "type": "object",
+    "items": {
+      "enable_us_stock": {
+        "description": "启用美股查询",
+        "type": "bool",
+        "default": true,
+        "hint": "是否启用美股实时行情和历史数据查询"
+      },
+      "enable_hk_stock": {
+        "description": "启用港股查询",
+        "type": "bool",
+        "default": true,
+        "hint": "是否启用港股实时行情和历史数据查询"
+      },
+      "enable_chart_generation": {
+        "description": "启用图表生成",
+        "type": "bool",
+        "default": true,
+        "hint": "是否启用K线图表生成功能"
+      },
+      "enable_technical_analysis": {
+        "description": "启用技术分析",
+        "type": "bool",
+        "default": true,
+        "hint": "是否启用MACD、KDJ等技术指标分析"
+      }
+    }
   }
 }
