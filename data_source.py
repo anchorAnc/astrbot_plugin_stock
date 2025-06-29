@@ -1,6 +1,4 @@
-"""
-AkShare 股票数据源模块
-"""
+"""AkShare 股票数据源模块"""
 
 import akshare as ak
 import pandas as pd
@@ -8,6 +6,8 @@ import logging
 import re
 import asyncio
 import signal
+import requests
+import json
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -42,11 +42,19 @@ class AkStockDataSource:
         self._enable_hk_stock = features.get('enable_hk_stock', True)
         self._enable_chart_generation = features.get('enable_chart_generation', True)
         self._enable_technical_analysis = features.get('enable_technical_analysis', True)
+        self._enable_crypto = features.get('enable_crypto', True)
+        
+        # 币安API配置
+        crypto_config = self.config.get('crypto', {})
+        self._binance_base_url = crypto_config.get('binance_base_url', 'https://api.binance.com')
+        self._crypto_timeout = crypto_config.get('crypto_timeout', 15)
+        self._default_vs_currency = crypto_config.get('default_vs_currency', 'USDT')
+        self._supported_vs_currencies = crypto_config.get('supported_vs_currencies', ['USDT', 'BTC', 'ETH', 'BNB'])
         
         self._enable_auto_correction = self.config.get('enable_auto_correction', True)
         self._executor = ThreadPoolExecutor(max_workers=3)
         
-        logger.info(f"AkShare数据源初始化完成 - 超时: 美股{self._us_stock_timeout}s/通用{self._general_timeout}s")
+        logger.info(f"数据源初始化完成 - 超时: 美股{self._us_stock_timeout}s/通用{self._general_timeout}s/数字货币{self._crypto_timeout}s")
     
     def _timeout_handler(self, signum, frame):
         """超时处理"""
@@ -721,6 +729,274 @@ class AkStockDataSource:
         except Exception as e:
             logger.error(f"获取指数实时行情异常: {e}")
             return {}
+    
+    # ======================== 币安API数字货币行情方法 ========================
+    
+    def _normalize_crypto_symbol(self, symbol: str, vs_currency: str = None) -> str:
+        """标准化数字货币交易对符号"""
+        if not symbol:
+            return ""
+            
+        symbol = symbol.upper().strip()
+        vs_currency = (vs_currency or self._default_vs_currency).upper()
+        
+        # 如果已包含交易对后缀且不等于单一货币符号，直接返回
+        # 避免BTC被误认为是已包含后缀的XXXBTC
+        for vs in self._supported_vs_currencies:
+            if symbol.endswith(vs) and len(symbol) > len(vs):
+                return symbol
+        
+        # 如果symbol本身就是一个支持的计价货币且不想要自引用，返回原始形式
+        if symbol in self._supported_vs_currencies and symbol == vs_currency:
+            return symbol  # 比如用户查询USDT价格
+            
+        # 组合交易对
+        return f"{symbol}{vs_currency}"
+    
+    async def _binance_api_request(self, endpoint: str, params: dict = None) -> dict:
+        """发送币安API请求"""
+        url = f"{self._binance_base_url}{endpoint}"
+        
+        def make_request():
+            response = requests.get(url, params=params, timeout=self._crypto_timeout)
+            response.raise_for_status()
+            return response.json()
+        
+        try:
+            result = await self._retry_with_timeout(
+                make_request, 
+                max_retries=self._max_retries, 
+                timeout=self._crypto_timeout
+            )
+            return result
+        except Exception as e:
+            logger.error(f"币安API请求失败 {endpoint}: {e}")
+            return {}
+    
+    async def get_crypto_price(self, symbol: str, vs_currency: str = None) -> dict:
+        """获取数字货币当前价格"""
+        if not self._enable_crypto:
+            return {"error": "数字货币功能未启用"}
+            
+        try:
+            trading_pair = self._normalize_crypto_symbol(symbol, vs_currency)
+            
+            # 获取24小时价格统计
+            ticker_data = await self._binance_api_request(
+                "/api/v3/ticker/24hr", 
+                {"symbol": trading_pair}
+            )
+            
+            if not ticker_data:
+                return {"error": f"未找到交易对 {trading_pair}"}
+            
+            # 格式化返回数据
+            current_price = float(ticker_data.get('lastPrice', 0))
+            price_change = float(ticker_data.get('priceChange', 0))
+            price_change_percent = float(ticker_data.get('priceChangePercent', 0))
+            high_24h = float(ticker_data.get('highPrice', 0))
+            low_24h = float(ticker_data.get('lowPrice', 0))
+            volume_24h = float(ticker_data.get('volume', 0))
+            
+            result = {
+                'symbol': trading_pair,
+                'name': symbol.upper(),
+                'price': current_price,
+                'change': price_change,
+                'change_percent': price_change_percent,
+                'high_24h': high_24h,
+                'low_24h': low_24h,
+                'volume_24h': volume_24h,
+                'vs_currency': vs_currency or self._default_vs_currency,
+                'market_cap': None,  # 币安API不直接提供市值
+                'timestamp': datetime.now().isoformat(),
+                'source': 'binance'
+            }
+            
+            logger.info(f"获取数字货币价格成功: {trading_pair}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"获取数字货币价格异常 {symbol}: {e}")
+            return {"error": f"获取{symbol}价格失败: {str(e)}"}
+    
+    async def get_crypto_list(self, limit: int = 10) -> list:
+        """获取热门数字货币列表"""
+        if not self._enable_crypto:
+            return []
+            
+        try:
+            # 获取24小时行情统计，按交易量排序
+            tickers_data = await self._binance_api_request("/api/v3/ticker/24hr")
+            
+            if not tickers_data:
+                return []
+            
+            # 过滤USDT交易对并按交易量排序
+            usdt_pairs = [
+                ticker for ticker in tickers_data 
+                if ticker['symbol'].endswith('USDT') and float(ticker['quoteVolume']) > 0
+            ]
+            
+            # 按交易量排序
+            usdt_pairs.sort(key=lambda x: float(x['quoteVolume']), reverse=True)
+            
+            result = []
+            for ticker in usdt_pairs[:limit]:
+                symbol = ticker['symbol']
+                base_asset = symbol.replace('USDT', '')
+                
+                crypto_info = {
+                    'symbol': symbol,
+                    'name': base_asset,
+                    'price': float(ticker['lastPrice']),
+                    'change_percent': float(ticker['priceChangePercent']),
+                    'volume_24h': float(ticker['volume']),
+                    'quote_volume_24h': float(ticker['quoteVolume']),
+                    'vs_currency': 'USDT'
+                }
+                result.append(crypto_info)
+            
+            logger.info(f"获取热门数字货币列表成功: {len(result)}个")
+            return result
+            
+        except Exception as e:
+            logger.error(f"获取数字货币列表异常: {e}")
+            return []
+    
+    async def get_exchange_info(self) -> dict:
+        """获取币安交易所信息和支持的交易对"""
+        if not self._enable_crypto:
+            return {}
+            
+        try:
+            exchange_info = await self._binance_api_request("/api/v3/exchangeInfo")
+            
+            if not exchange_info:
+                return {}
+            
+            # 提取活跃的USDT交易对
+            active_usdt_pairs = []
+            for symbol_info in exchange_info.get('symbols', []):
+                if (symbol_info.get('status') == 'TRADING' and 
+                    symbol_info.get('symbol', '').endswith('USDT')):
+                    active_usdt_pairs.append({
+                        'symbol': symbol_info['symbol'],
+                        'base_asset': symbol_info['baseAsset'],
+                        'quote_asset': symbol_info['quoteAsset'],
+                        'status': symbol_info['status']
+                    })
+            
+            result = {
+                'exchange': 'Binance',
+                'server_time': exchange_info.get('serverTime'),
+                'active_usdt_pairs_count': len(active_usdt_pairs),
+                'total_symbols': len(exchange_info.get('symbols', [])),
+                'supported_intervals': ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M'],
+                'sample_pairs': active_usdt_pairs[:20]  # 返回前20个作为示例
+            }
+            
+            logger.info(f"获取交易所信息成功: {len(active_usdt_pairs)}个USDT交易对")
+            return result
+            
+        except Exception as e:
+            logger.error(f"获取交易所信息异常: {e}")
+            return {}
+    
+    async def get_crypto_klines(self, symbol: str, interval: str = "1d", limit: int = 100, vs_currency: str = None) -> list:
+        """获取数字货币K线历史数据"""
+        if not self._enable_crypto:
+            return []
+            
+        try:
+            trading_pair = self._normalize_crypto_symbol(symbol, vs_currency)
+            
+            # 币安支持的K线周期映射
+            interval_map = {
+                '1min': '1m', '5min': '5m', '15min': '15m', '30min': '30m', 
+                '60min': '1h', 'hourly': '1h', '4hour': '4h', 
+                'daily': '1d', '1day': '1d', 'weekly': '1w', 'monthly': '1M'
+            }
+            
+            binance_interval = interval_map.get(interval, interval)
+            if binance_interval not in ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M']:
+                logger.warning(f"不支持的K线周期: {interval}, 使用默认1d")
+                binance_interval = '1d'
+            
+            # 限制数据量
+            limit = max(5, min(500, limit))
+            
+            params = {
+                'symbol': trading_pair,
+                'interval': binance_interval,
+                'limit': limit
+            }
+            
+            klines_data = await self._binance_api_request("/api/v3/klines", params)
+            
+            if not klines_data:
+                return []
+            
+            # 转换为标准格式
+            result = []
+            for kline in klines_data:
+                try:
+                    # 币安K线数据格式: [timestamp, open, high, low, close, volume, close_time, quote_volume, ...]
+                    timestamp = int(kline[0])
+                    date_str = datetime.fromtimestamp(timestamp / 1000).strftime('%Y%m%d')
+                    time_str = datetime.fromtimestamp(timestamp / 1000).strftime('%H:%M:%S')
+                    
+                    kline_data = {
+                        'trade_date': date_str,
+                        'trade_time': time_str,
+                        'open': float(kline[1]),
+                        'high': float(kline[2]),
+                        'low': float(kline[3]),
+                        'close': float(kline[4]),
+                        'volume': float(kline[5]),
+                        'amount': float(kline[7]),  # quote_volume
+                        'timestamp': timestamp
+                    }
+                    
+                    # 计算涨跌
+                    if len(result) > 0:
+                        prev_close = result[-1]['close']
+                        kline_data['change'] = kline_data['close'] - prev_close
+                        kline_data['pct_chg'] = (kline_data['change'] / prev_close) * 100 if prev_close else 0
+                    else:
+                        kline_data['change'] = 0
+                        kline_data['pct_chg'] = 0
+                    
+                    result.append(kline_data)
+                    
+                except (IndexError, ValueError, TypeError) as e:
+                    logger.warning(f"解析K线数据异常: {e}")
+                    continue
+            
+            # 按时间排序 (最新的在前)
+            result.reverse()
+            
+            logger.info(f"获取数字货币K线数据成功: {trading_pair} {binance_interval} {len(result)}条")
+            return result
+            
+        except Exception as e:
+            logger.error(f"获取数字货币K线数据异常 {symbol}: {e}")
+            return []
+    
+    async def get_crypto_daily(self, symbol: str, limit: int = 100, vs_currency: str = None) -> list:
+        """获取数字货币日K线数据"""
+        return await self.get_crypto_klines(symbol, 'daily', limit, vs_currency)
+    
+    async def get_crypto_hourly(self, symbol: str, limit: int = 48, vs_currency: str = None) -> list:
+        """获取数字货币小时K线数据"""
+        return await self.get_crypto_klines(symbol, 'hourly', limit, vs_currency)
+    
+    async def get_crypto_minutely(self, symbol: str, interval: str = '15min', limit: int = 96, vs_currency: str = None) -> list:
+        """获取数字货币分钟K线数据"""
+        valid_intervals = ['1min', '5min', '15min', '30min', '60min']
+        if interval not in valid_intervals:
+            interval = '15min'
+        return await self.get_crypto_klines(symbol, interval, limit, vs_currency)
     
     def _find_column(self, df: pd.DataFrame, possible_names: list) -> str:
         """在DataFrame中查找可能的列名"""

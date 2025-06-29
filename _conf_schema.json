@@ -169,6 +169,45 @@
         "type": "bool",
         "default": true,
         "hint": "是否启用MACD、KDJ等技术指标分析"
+      },
+      "enable_crypto": {
+        "description": "启用数字货币查询",
+        "type": "bool",
+        "default": true,
+        "hint": "是否启用数字货币实时行情查询(基于币安API)"
+      }
+    }
+  },
+  "crypto": {
+    "description": "数字货币设置",
+    "type": "object",
+    "items": {
+      "binance_base_url": {
+        "description": "币安API基础URL",
+        "type": "string",
+        "default": "https://api.binance.com",
+        "hint": "币安API的基础URL，一般无需修改"
+      },
+      "crypto_timeout": {
+        "description": "数字货币查询超时时间(秒)",
+        "type": "int",
+        "default": 15,
+        "min": 5,
+        "max": 60,
+        "hint": "数字货币行情获取的超时时间"
+      },
+      "default_vs_currency": {
+        "description": "默认计价货币",
+        "type": "string",
+        "default": "USDT",
+        "options": ["USDT", "BTC", "ETH", "BNB"],
+        "hint": "默认的计价货币，建议使用USDT"
+      },
+      "supported_vs_currencies": {
+        "description": "支持的计价货币列表",
+        "type": "list",
+        "default": ["USDT", "BTC", "ETH", "BNB"],
+        "hint": "支持的计价货币，不建议修改"
       }
     }
   }

@@ -1,88 +1,58 @@
-# AstrBot 股票行情插件
+# AstrBot 股票与数字货币行情插件
 
-基于 AkShare 的股票行情查询插件，为 AstrBot 机器人提供专业的股市数据查询功能。
+基于 AkShare 和 Binance API 的综合金融行情查询插件，为 AstrBot 机器人提供专业的股市和数字货币数据查询功能。
 
 ## 🚀 功能特色
 
 - **多市场支持**: A股、港股、美股及主要指数
-- **实时行情**: 股票实时价格、涨跌幅、成交量等
-- **历史数据**: 支持多粒度历史数据查询
+- **数字货币**: 基于币安API的实时加密货币行情
+- **实时行情**: 股票和数字货币实时价格、涨跌幅、成交量等
+- **历史数据**: 支持多粒度股票历史数据查询
 - **专业图表**: K线图表，包含技术指标（MACD、KDJ等）
 - **智能纠错**: 自动识别和纠正常见股票代码格式
 
 ## 📦 安装
 
-### 方式一：直接下载
-1. 下载插件到 AstrBot 插件目录 `AstrBot/data/plugins/`
-2. 在 AstrBot 运行环境中安装依赖：`python -m pip install -r requirements.txt`
-3. 重启 AstrBot 服务
-
-### 方式二：Git克隆
 ```bash
 cd AstrBot/data/plugins/
 git clone https://github.com/anchorAnc/astrbot_plugin_stock.git
 cd astrbot_plugin_stock
-python -m pip install -r requirements.txt
+pip install -r requirements.txt
 ```
+重启 AstrBot 即可使用。
 
 ## 🎯 指令使用
 
-### 实时行情
-```
-/price_now 000001.SZ    # A股实时行情
-/price_now 00700.HK     # 港股实时行情  
-/price_now AAPL.US      # 美股实时行情
-```
-
-### 历史数据
-```
-/price 000001.SZ                    # A股默认历史数据
-/price 600519.SH 20210101 20210131  # 指定时间范围
-/price 00700.HK                     # 港股历史数据
-```
-> **注意**：美股历史数据暂不可用，建议使用实时行情查询美股数据
-
-### K线图表
-```
-/price_chart 000001.SZ              # A股日K线图
-/price_chart 000001.SZ hourly 48    # 48小时K线
-/price_chart 000001.SZ 15min 96     # 96根15分钟K线
-```
-> **注意**：美股K线图暂不可用，建议查询A股/港股K线图
-
-### 指数查询
-```
-/index sh           # 上证指数（简写）
-/index 000001.SH    # 上证指数（全称）
-/index_chart sz     # 深证成指K线图
-```
-
-## 🧪 快速测试
-
-### 基础测试
+### 📈 股票功能
 ```bash
-/price_now 000001.SZ        # 平安银行实时行情
-/price_chart 000001.SZ      # 平安银行K线图
-/index sh                   # 上证指数
+/price_now 000001.SZ                 # A股实时行情
+/price_now 00700.HK                  # 港股实时行情  
+/price_now AAPL.US                   # 美股实时行情
+/price 000001.SZ                     # 历史数据
+/price 600519.SH 20210101 20210131   # 指定时间范围
+/price_chart 000001.SZ               # 日K线图
+/price_chart 000001.SZ hourly 48     # 48小时K线
+/index sh                            # 上证指数（简写）
+/index_chart sz                      # 深证成指K线图
 ```
 
-### 多市场测试
+### 🪙 数字货币功能
 ```bash
-/price_now 600519.SH        # A股：茅台实时行情
-/price_now 00700.HK         # 港股：腾讯实时行情
-/price_now AAPL.US          # 美股：苹果实时行情
-/price 600519.SH            # A股：茅台历史数据  
-/price 00700.HK             # 港股：腾讯历史数据
+/crypto BTC                          # 比特币实时价格
+/crypto ETH USDT                     # 以太坊对USDT价格
+/crypto_list                         # 热门数字货币列表
+/crypto_list 20                      # 前20热门数字货币
+/crypto_history BTC                  # 比特币历史行情
+/crypto_chart BTC                    # 比特币日K线图
+/crypto_chart ETH hourly 48          # 以太坊48小时K线图
+/crypto_market                       # 数字货币市场概览
+/crypto_info                         # 币安交易所信息
 ```
-> **注意**：美股仅支持实时行情，暂不支持历史数据和K线图
 
-### 自动纠错测试
+### 🧪 快速测试
 ```bash
-/price sz000858             # 自动纠正为 000858.SZ
-/price aapl                 # 自动纠正为 AAPL.US
+/help_stock                         # 查看帮助
 ```
-
-更多测试样例请参考 [测试样例文档](TEST_SAMPLES.md)。
 
 ## ⚙️ 配置选项
 
@@ -90,18 +60,18 @@ python -m pip install -r requirements.txt
 
 - **数据显示**: 默认显示条数、缓存时间等
 - **图表样式**: 尺寸、颜色主题、技术指标开关等  
-- **功能开关**: 图表生成、技术分析、自动纠错等
-
-详细配置说明请参考 [配置指南](CONFIGURATION_GUIDE.md)。
+- **功能开关**: 图表生成、技术分析、自动纠错、数字货币等
+- **数字货币**: 币安API设置、超时时间、计价货币等
 
 ## 📊 支持的数据类型
 
-| 类型 | 支持格式 | 示例 |
-|------|---------|------|
-| A股 | 000000.SZ/SH | 000001.SZ, 600000.SH |
-| 港股 | 00000.HK | 00700.HK, 09988.HK |
-| 美股 | SYMBOL.US | AAPL.US, TSLA.US |
-| 指数 | 000000.SH | 000001.SH |
+| 类型 | 支持格式 | 示例 | 数据源 |
+|------|---------|------|-------|
+| A股 | 000000.SZ/SH | 000001.SZ, 600000.SH | AkShare |
+| 港股 | 00000.HK | 00700.HK, 09988.HK | AkShare |
+| 美股 | SYMBOL.US | AAPL.US, TSLA.US | AkShare |
+| 指数 | 000000.SH | 000001.SH | AkShare |
+| 数字货币 | SYMBOL 或 SYMBOLUSDT | BTC, ETH, BTCUSDT | Binance API |
 
 ## 🛠️ 技术指标
 
@@ -124,7 +94,7 @@ K线图表包含以下技术指标：
 ## 🔮 未来计划
 
 - **更多图表类型**: 分时图、深度图等
-- **数字货币支持**: 加密货币行情查询
+- **数字货币高级功能**: 价格预警、定时推送、DeFi数据等
 - **模拟交易**: 虚拟炒股功能
 - **定时订阅**: 行情推送和提醒
 - **AI分析**: 智能预测和分析
@@ -133,9 +103,13 @@ K线图表包含以下技术指标：
 ## 🛡️ 免责声明
 
 ### 数据免责
-- 本插件数据来源于 AkShare，数据的准确性、完整性由数据提供方负责
+- 本插件数据来源于 AkShare 和 Binance API，数据的准确性、完整性由数据提供方负责
 - 实时数据可能存在延迟，仅供技术研究参考
 - **不提供任何投资建议**：所有数据展示仅供参考，使用者应独立判断并承担投资风险
+
+### 数字货币特别提示
+- 数字货币价格波动巨大，投资需谨慎
+- 币安API数据仅供参考，交易决策请以官方平台为准
 
 ### 开发免责
 本插件为开源项目，作者不对以下情况负责：
@@ -146,6 +120,13 @@ K线图表包含以下技术指标：
 
 ## 🔄 更新日志
 
+### v1.2.0
+- ✨ 新增数字货币功能：基于币安API的实时行情、历史数据、K线图表
+- ✨ 新增数字货币对比分析和市场概览功能  
+- 🏗️ 完成代码模块化重构：拆分为独立的命令和工具模块
+- 🎨 优化K线图表显示和技术指标
+- 🔧 改进错误处理和超时机制
+
 ### v1.1.1
 - 支持多市场股票查询（A股、港股、美股）
 - 支持多粒度K线图表（日/小时/分钟级）
@@ -154,4 +135,4 @@ K线图表包含以下技术指标：
 
 ---
 
-*数据来源: [AkShare](https://akshare.akfamily.xyz/)*
+*数据来源: [AkShare](https://akshare.akfamily.xyz/) & [Binance API](https://binance-docs.github.io/apidocs/)*
