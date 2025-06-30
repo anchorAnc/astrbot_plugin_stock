@@ -19,7 +19,7 @@ git clone https://github.com/anchorAnc/astrbot_plugin_stock.git
 cd astrbot_plugin_stock
 pip install -r requirements.txt
 ```
-重启 AstrBot 即可使用。
+重启 AstrBot 即可使用。插件已内置微软雅黑、宋体、楷体字体文件，无需额外配置。
 
 ## 🎯 指令使用
 
@@ -99,6 +99,7 @@ K线图表包含以下技术指标：
 - **定时订阅**: 行情推送和提醒
 - **AI分析**: 智能预测和分析
 - **股票名称匹配**: 支持通过公司名称模糊搜索股票代码
+- **字体优化**: 内置宋体、楷体、微软雅黑等字体，解决跨平台字体显示问题
 
 ## 🛡️ 免责声明
 

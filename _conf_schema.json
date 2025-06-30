@@ -125,6 +125,17 @@
         "type": "bool",
         "default": true,
         "hint": "是否在图表中显示MACD、KDJ等技术指标"
+      },
+      "font_file": {
+        "description": "图表字体文件",
+        "type": "string",
+        "default": "msyh.ttf",
+        "hint": "选择内置字体：微软雅黑、宋体、楷体",
+        "options": [
+          "msyh.ttf",
+          "simsun.ttc", 
+          "simkai.ttf"
+        ]
       }
     }
   },

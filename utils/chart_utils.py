@@ -11,13 +11,46 @@ from astrbot.api import logger
 
 matplotlib.use('Agg')
 
-try:
-    font = FontProperties(fname=r'C:\Windows\Fonts\msyh.ttc')
-except:
+def load_font(font_file="msyh.ttf"):
+    """加载指定字体文件"""
+    import os
+    
     try:
-        font = FontProperties(fname='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
-    except:
-        font = FontProperties()
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        plugin_dir = os.path.dirname(current_dir)
+        font_path = os.path.join(plugin_dir, "fonts", font_file)
+        
+        if os.path.isfile(font_path):
+            return FontProperties(fname=font_path)
+    except Exception:
+        pass
+    
+    return get_builtin_font()
+
+def get_builtin_font():
+    """获取内置字体"""
+    import os
+    
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    plugin_dir = os.path.dirname(current_dir)
+    fonts_dir = os.path.join(plugin_dir, "fonts")
+    
+    font_files = ["msyh.ttf", "simsun.ttc", "simkai.ttf"]
+    
+    for font_file in font_files:
+        font_path = os.path.join(fonts_dir, font_file)
+        if os.path.isfile(font_path):
+            try:
+                logger.info(f"使用内置字体: {font_file}")
+                return FontProperties(fname=font_path)
+            except Exception as e:
+                logger.warning(f"加载字体失败 {font_file}: {e}")
+                continue
+    
+    logger.warning("未找到内置字体，使用默认字体")
+    return FontProperties()
+
+font = get_builtin_font()
 
 matplotlib.rcParams.update({
     'font.size': 12,
@@ -100,6 +133,10 @@ class ChartGenerator:
         self.show_volume = chart_style.get('show_volume', True)
         self.show_indicators = chart_style.get('show_indicators', True)
         
+        # 从配置读取字体文件
+        font_file = chart_style.get('font_file', 'msyh.ttf')
+        self.font = load_font(font_file)
+        
         features = config.get('features', {})
         self.enable_chart_generation = features.get('enable_chart_generation', True)
         self.enable_technical_analysis = features.get('enable_technical_analysis', True)
@@ -148,7 +185,7 @@ class ChartGenerator:
             axes = [fig.add_subplot(g) for g in gs]
             
             fig.patch.set_facecolor('#1C1C1C')
-            fig.suptitle(title, fontproperties=font, fontsize=14, color='white', y=0.98)
+            fig.suptitle(title, fontproperties=self.font, fontsize=14, color='white', y=0.98)
 
             up = data['close'] > data['open']
             down = ~up
@@ -185,7 +222,7 @@ class ChartGenerator:
 
             if self.show_volume and len(axes) > 1:
                 ax = axes[1]
-                ax.set_title("Volume", fontproperties=font, fontsize=12, color='white', pad=12)
+                ax.set_title("Volume", fontproperties=self.font, fontsize=12, color='white', pad=12)
                 ax.bar(data.index[up], data['volume'][up], width, color=self.up_color, zorder=3)
                 ax.bar(data.index[down], data['volume'][down], width, color=self.down_color, zorder=3)
                 
@@ -202,7 +239,7 @@ class ChartGenerator:
 
             if self.enable_technical_analysis and self.show_indicators and len(axes) > 2:
                 ax = axes[-2]
-                ax.set_title("MACD(12,26,9)", fontproperties=font, fontsize=12, color='white', pad=12)
+                ax.set_title("MACD(12,26,9)", fontproperties=self.font, fontsize=12, color='white', pad=12)
                 if all(x is not None for x in [dif, dea, macd]):
                     ax.bar(data.index, macd, width, color=np.where(macd >= 0, self.up_color, self.down_color))
                     ax.plot(data.index, dif, 'white', lw=1, label='DIF')
@@ -214,7 +251,7 @@ class ChartGenerator:
                         text.set_color('white')
 
                 ax = axes[-1]
-                ax.set_title("KDJ(9,3,3)", fontproperties=font, fontsize=12, color='white', pad=12)
+                ax.set_title("KDJ(9,3,3)", fontproperties=self.font, fontsize=12, color='white', pad=12)
                 if all(x is not None for x in [k, d, j]):
                     ax.plot(data.index, k, 'white', lw=1, label='K')
                     ax.plot(data.index, d, 'yellow', lw=1, label='D')
