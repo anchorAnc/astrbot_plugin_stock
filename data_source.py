@@ -205,6 +205,8 @@ class AkStockDataSource:
             if not end_date:
                 end_date = datetime.now().strftime('%Y%m%d')
             
+            logger.info(f"获取{ts_code}历史数据，日期范围: {start_date} 到 {end_date}")
+            
             if market_type == "A股" or market_type == "ETF" or market_type == "指数":
                 df = await self._retry_with_timeout(
                     ak.stock_zh_a_hist,
@@ -315,6 +317,12 @@ class AkStockDataSource:
             if df is None or df.empty:
                 logger.warning(f"未获取到{ts_code}的日K线数据")
                 return []
+            
+            # 添加数据范围调试信息
+            if not df.empty:
+                first_date = df.iloc[0, 0] if len(df) > 0 else "无数据"
+                last_date = df.iloc[-1, 0] if len(df) > 0 else "无数据" 
+                logger.info(f"AkShare返回{ts_code}数据范围: {first_date} 到 {last_date}，共{len(df)}条记录")
                 
             result = []
             max_records = self._daily_max_records

@@ -9,7 +9,7 @@ from .commands.crypto_commands import CryptoCommands
 from .commands.help_commands import HelpCommands
 from .utils.chart_utils import ChartGenerator
 
-@register("astrbot_plugin_stock", "anchor", "股市行情查询插件", "1.2.1", "https://github.com/anchorAnc/astrbot_plugin_stock")
+@register("astrbot_plugin_stock", "anchor", "股市行情查询插件", "1.2.2", "https://github.com/anchorAnc/astrbot_plugin_stock")
 class StockPricePlugin(Star):
     """股票行情插件主类"""
     def __init__(self, context: Context):

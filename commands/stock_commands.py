@@ -118,8 +118,13 @@ class StockCommands:
                 else:
                     return event.plain_result(f"⚠️ 未获取到 {ts_code} 的历史行情数据，请检查代码是否正确")
                 
-            slice_data = all_data[:self.default_limit]
+            slice_data = all_data[-self.default_limit:]  # 取最新的数据
+            slice_data.reverse()  # 反转使最新的在前面显示
             lines = [f"📈 {ts_code} 历史行情（最近 {len(slice_data)} 条）："]
+            
+            # 添加调试信息
+            if slice_data:
+                logger.info(f"显示{ts_code}历史行情，日期范围: {slice_data[-1]['trade_date']} 到 {slice_data[0]['trade_date']}")
             
             for item in slice_data:
                 change = item.get('change', 0)
@@ -239,7 +244,7 @@ class StockCommands:
                     limit_num = self.default_limit
 
             if not start and not end:
-                df = df.head(limit_num)
+                df = df.tail(limit_num)  # 改为取最新的数据
 
             df = df.sort_values('trade_date')
             df.reset_index(drop=True, inplace=True)
@@ -347,7 +352,7 @@ class StockCommands:
                     limit_num = self.default_limit
             
             if not start and not end:
-                df = df.head(limit_num)
+                df = df.tail(limit_num)  # 改为取最新的数据
             
             df = df.sort_values('trade_date')
             df.reset_index(drop=True, inplace=True)
