@@ -1,5 +1,5 @@
 name: "astrbot_plugin_stock"
 version: "v1.2.2"
 author: "anchor"
-desc: "基于AkShare和Binance的股市行情查询插件，支持数字货币、A股、港股、美股及指数的实时行情、历史数据和K线图表"
+description: "基于AkShare和Binance的股市行情查询插件，支持数字货币、A股、港股、美股及指数的实时行情、历史数据和K线图表"
 repo: "https://github.com/anchorAnc/astrbot_plugin_stock"
